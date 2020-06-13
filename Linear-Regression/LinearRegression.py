@@ -13,7 +13,7 @@ class LinearRegression:
 		self.X 				= 	Xin
 		self.Y 				= 	Yin
 		self.m 				= 	Yin.size
-		self.coeficients_ 	= 	np.random.rand(Xin.shape[1]+1)
+		self.coeficients_ 	= 	np.random.rand(Xin.shape[1])
 		self.intercept_ 	=   np.random.rand(1)
 		self.normalizeParameters()
 
@@ -26,8 +26,8 @@ class LinearRegression:
 		self.X  = (self.X - mu)/sigma
 		print("mean",mu,"std deviation",sigma,"normalized feature",self.X)
 		# Adding intercept term to X
-		self.X  = np.concatenate((np.ones((self.m,1),dtype=int),self.X),axis=1)
-		print("X with intercept Term",self.X)
+		# self.X  = np.concatenate((np.ones((self.m,1),dtype=int),self.X),axis=1)
+		# print("X with intercept Term",self.X)
 	
 	# Part 3 Gradient Descent and Cost Calculation
 	def computeCost(self):
