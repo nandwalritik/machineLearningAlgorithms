@@ -1,23 +1,20 @@
 import LinearRegression as LR
 import numpy as np 
-import pandas as pd 
+
+def normalize(X):
+	return (X - np.mean(X,axis=0))/np.std(X,axis=0)
 
 data = np.loadtxt('data.txt',dtype=float,delimiter=',')
-# print(data)
+
 size = data.shape[0]
-print(size)
+
 X,Y = data[:,0:2],data[:,-1]
-# print("This is X",X)
-# print("This is Y",Y)
-# taking 60 to 40 for train test
-testSize 	= (int)(0.3*size)
-trainSize 	= size - testSize	 
-# print(testSize)
+X = normalize(X)
+
+testSize    = (int)(0.3*size)
+trainSize   = size - testSize 
+
 X_train,X_test,y_train,y_test = X[:trainSize],X[trainSize:],Y[:trainSize],Y[trainSize:]
-# print("Xtrain ",X_train)
-# print("ytrain ",y_train)
-# print("Xtest ",X_test)
-# print("yTest ",y_test)
 
 train = LR.LinearRegression()
 train.setter(X_train,y_train)
@@ -26,4 +23,18 @@ test  = LR.LinearRegression()
 test.setter(X_test,y_test)
 
 train.gradientDescent()
-print("Accuracy of model   ",train.accuracy(test))
+print("Accuracy of model   	"+str(train.accuracy(test)))
+print("Coeficients		"+str(train.coef_()[0]))
+print("intercept Term		"+str(train.intercept()))
+
+# Scikit Learn Implementation
+from sklearn.linear_model import LinearRegression
+regressor = LinearRegression()
+regressor.fit(X_train,y_train)
+y_pred	  =   regressor.predict(X_test)
+
+error = 100*((y_pred-y_test)/y_test)
+print("Using scikit Learn :-")
+print("Accuracy of Model    "+str(100-np.abs(np.mean(error))))
+print("Coeficients          "+str(regressor.coef_))
+print("Intercept Term		"+str(regressor.intercept_))

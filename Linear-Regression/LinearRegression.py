@@ -1,10 +1,3 @@
-'''
-	feature normilization 
-		x = (x-mu)/sigma
-		mu = mean(x)
-		sigma = standardDeviation
-
-'''
 import numpy as np
 class LinearRegression:
 	
@@ -15,19 +8,6 @@ class LinearRegression:
 		self.m 				= 	Yin.size
 		self.coeficients_ 	= 	np.random.rand(Xin.shape[1])
 		self.intercept_ 	=   np.random.rand(1)
-		self.normalizeParameters()
-
-	# Part 2 Feature Normalization
-	def normalizeParameters(self):
-		print("X before normilization")
-		print(self.X)
-		mu 		= np.mean(self.X)
-		sigma	= np.std(self.X)
-		self.X  = (self.X - mu)/sigma
-		print("mean",mu,"std deviation",sigma,"normalized feature",self.X)
-		# Adding intercept term to X
-		# self.X  = np.concatenate((np.ones((self.m,1),dtype=int),self.X),axis=1)
-		# print("X with intercept Term",self.X)
 	
 	# Part 3 Gradient Descent and Cost Calculation
 	def computeCost(self):
@@ -42,19 +22,19 @@ class LinearRegression:
 			temp_intercept   	= 	self.intercept_   -  (alpha/(self.m))*(np.sum(h-self.Y))
 			self.coeficients_ 	= 	temp_coeficients
 			self.intercept_		= 	temp_intercept
-			print("Iteration   "+str(i)+"   Cost   "+str(self.computeCost()))	
+			# print("Iteration   "+str(i)+"   Cost   "+str(self.computeCost()))	
 
 	# Prediction & Accuracy
-	def predict(self,x,y):
+	def predict(self,x):
 		return np.dot(x,self.coeficients_)+self.intercept_
 
 	def accuracy(self,test):
-		predicttion = self.predict(test.X,test.Y)
+		predicttion = self.predict(test.X)
 		error       = ((predicttion-test.Y)/test.Y)*100 
 		return (100-np.mean(error))
 
 	def coef_(self):
 		return [self.coeficients_]
 
-	def intercept(seff):
-		return [self.intercept_]		
+	def intercept(self):
+		return self.intercept_		
