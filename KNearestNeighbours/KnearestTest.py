@@ -8,16 +8,13 @@ def normalize(X):
 	return (X-np.mean(X))/(np.std(X))
 
 
-iris 		= 	load_iris()
-
-X           =   iris.data
-y 			=	iris.target
-
-X,y = shuffle(X,y,random_state=0)	
-
-sz   		=   iris.data.shape[0]
-tsz			=   (int)(0.3*sz)
-trainsz		=   sz-tsz
+iris 	= 	load_iris()
+X       =   iris.data
+y 		=	iris.target
+X,y 	= 	shuffle(X,y,random_state=0)	
+sz   	=	iris.data.shape[0]
+tsz		=	(int)(0.3*sz)
+trainsz	=	sz-tsz
 X_train,X_test,y_train,y_test = X[:trainsz,:],X[trainsz:,:],y[:trainsz],y[trainsz:]
 
 # print(y_test)
