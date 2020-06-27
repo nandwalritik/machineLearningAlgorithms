@@ -1,7 +1,12 @@
+# HyperParameters alpha = 0.001,iterations=300,multiplier=0.1,np.random.seed(2)
 import NN as nClassifier
 import numpy as np 
 import matplotlib.pyplot as plt
 import pandas as pd
+import warnings
+warnings.filterwarnings("ignore") #suppress warnings
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 # add header names
 headers =  ['age', 'sex','chest_pain','resting_blood_pressure',  
@@ -10,12 +15,7 @@ headers =  ['age', 'sex','chest_pain','resting_blood_pressure',
         'num_of_major_vessels','thal', 'heart_disease']
 
 heart_df = pd.read_csv('heart.dat', sep=' ', names=headers)
-import numpy as np
-import warnings
-warnings.filterwarnings("ignore") #suppress warnings
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+
 
 #convert imput to numpy arrays
 X = heart_df.drop(columns=['heart_disease'])
@@ -28,7 +28,7 @@ heart_df['heart_disease'] = heart_df['heart_disease'].replace(2, 1)
 y_label = heart_df['heart_disease'].values.reshape(X.shape[0], 1)
 
 #split data into train and test set
-Xtrain, Xtest, ytrain, ytest = train_test_split(X, y_label, test_size=0.2, random_state=2)
+Xtrain, Xtest, ytrain, ytest = train_test_split(X, y_label, test_size=0.3, random_state=2)
 
 #standardize the dataset
 sc = StandardScaler()
@@ -42,8 +42,18 @@ print(f"Shape of train label is {ytrain.shape}")
 print(f"Shape of test labels is {ytest.shape}")
 
 train = nClassifier.NeuralLearn()
-# print(np.shape(Xtrain))
 train.setter(Xtrain,ytrain,[Xtrain.shape[1],8,1])
 train.fit()
+train.plot_loss()
 
+print("Accuracy using class based implementation " + str(train.accuracy(Xtest,ytest)))
 
+# # Scikit-Learn Implementation
+from sklearn.neural_network import MLPClassifier
+clf = MLPClassifier(hidden_layer_sizes=(8))
+clf.fit(Xtrain,ytrain)
+prediction = clf.predict(Xtest)
+pre = [[x] for x in prediction]
+pre = np.array(pre)
+acc = 100*(np.sum(pre==ytest)/ytest.size)
+print("Accuracy of Scikit-Learn Model "+str(acc))
