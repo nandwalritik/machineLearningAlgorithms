@@ -1,145 +1,134 @@
 import numpy as np
 class DecisionTreeClassifier:
-	def setter(self,Xin,yin,max_depth):
-		self.max_depth 	= max_depth
+	def setter(self,Xin,yin):
 		self.X 			= Xin
 		self.y 			= yin
-		self.features 	= Xin.shape[1] # num of features in data
-		self.n_classes_ = len(np.unique(yin))
-		self.m 			= yin.size
-		self.giniC 		= []
-		self.th 		= []
+		self.m 			= yin.size # number of training examples
+		self.features 	= Xin.shape[1]
+		self.Node 		= self.build_tree(self.X,self.y)
 
-
-	def bestSplit(self,X,y):
-		''' finding best split for a node'''
+	def class_counts(self,y):
+		"""Counts the number of each type of example in a dataset"""	
+		counts = {} # a dictionary of label -> count
+		for a in y:
+			if a not in counts:
+				counts[a] = 0
+			counts[a] += 1
 		
-		m = y.size
-		#print(y.shape)
-		if len(set(y)) <= 1:
-			return None,None
+		return counts		
 
-		# Count of each class in current Node
-		# cl,num_parent = np.unique(y,return_counts=True)
-		num_parent = [np.sum(y == c) for c in range(self.n_classes_)]
-		# print(cl,num_parent)
-		best_gini = 1.0 - sum((n/m)**2 for n in num_parent)
-		best_idx,best_thr = None,None
+	def gini_cost(self,X,y):
 
-		# loop through all features
-		for idx in range(self.features):
-			# sorting the data along selected feature
-			thresholds,classes = zip(*sorted(zip(X[:, idx], y)))
-			num_left 	= [0]*self.n_classes_
-			num_right 	= num_parent.copy()
-			# num_right 	= [0]*self.n_classes_
-			# print("Before loop "+str(num_left)+" "+str(num_right))
-			# possible split positions
-			for i in range(1,m):
-				c = classes[i-1]
-				num_left[c] 	+= 	1
-				num_right[c]	-= 	1
-				gini_left = 1.0-sum((num_left[x]/i)**2 for x in range(self.n_classes_))
-				gini_right= 1.0-sum((num_right[x]/(m-i))**2 for x in range(self.n_classes_))
+		classCount 	= self.class_counts(y)
+		_gini_Cost 	= 1
+		sub			= 0
+		for label in classCount:
+			prob 	= 	classCount[label]/float(len(X))
+			sub		+=	prob**2
+		_gini_Cost -= sub
+		
+		return _gini_Cost
 
-				# Gini impurity as per the weighted gini impurity of the children
-				gini = (i*gini_left + (m-i)*gini_right)/m 
-				# print("GiniComp " + str(gini)+" "+str(best_gini))
-				# for making sure that two points with same threshold don't gets splitted
-				if thresholds[i] == thresholds[i-1]:
-					continue
-				if gini < best_gini:
-					best_gini = gini
-					best_idx  = idx
-					best_thr  = (thresholds[i]+thresholds[i-1])/2		
-			# print(num_left,num_right)
-		# print(best_idx,best_thr)
-		self.th.append([best_idx,best_thr])
-		self.giniC.append([best_idx,best_gini])
-		return best_idx,best_thr
-	
-	def fit(self):
-		'''Building a decision tree classifier'''
-		self.tree = self._growTree(self.X,self.y)
+	def info_gain(self,right_X,right_y,left_X,left_y,current_uncertainity):
+			frac = float(len(right_X))/(len(right_X)+len(left_X))
+			return current_uncertainity - p*self.gini_cost(right_X,right_y)-(1-p)*self.gini_cost(left_X,left_y)		 
 
-	def _gini(self,y):
+
+	class Question:
+		'''A Question is used to partition a dataset'''
+		def __init__(self,column,value):
+			self.column = column
+			self.value	= value
+
+		def match(self,example):
+			'''	This method is used to compare feature value in example to 
+				feature value in this question.
+			'''				
+			value = example[self.column]
+			if isinstance(value, int) or isinstance(value, float):
+				return value >= self.value
+			else:
+				return value == self.value
+
+	def partition(self,X,y,question):
 		'''
-			function for computing gini impurity
-		'''	 
-		m 		= y.size
-		clss 	= np.unique(y)
-		gini 	= 1  
-		sub		= 0
-		for x in clss:
-			prob = (np.sum(y==x))/m
-			prob = prob**2
-			sub+=prob
-		gini -= prob 	
-		return gini
+			Partition a dataset
+	
+			For each row in the dataset,check if it is matching the question.
+				if True:
+					add it to trueRows
+				else:
+					add to falseRows		
+		'''	
+		right_X,right_y,left_X,left_y = [],[],[],[]
+		for i in range(len(X)): # Traversal through len(X)
+			if question.match(X[i]):
+				right_X.append(X[i])
+				right_y.append(y[i])
+			else:
+				left_X.append(X[i])
+				left_y.append(y[i])
+			return right_X,right_y,left_X,left_y
+					
+	def find_best_split(self,X,y):
+		"""
+			It finds the best threshold to be taken to have max Gini 
+			of the split
+		"""
+		best_gain = 0
+		best_ques  = None
+		current_uncertainity = self.gini_cost(X,y)
+		for feature in range(self.features):
+			values = set([row[feature] for row in X])
+			for val in values:
+				question = self.Question(feature,val)
+				right_X,right_y,left_X,left_y = self.partition(X,y,question)
+				if(len(right_X) == 0 or len(left_X) == 0):
+					continue
+				gain = self.info_gain(right_X,right_y,left_X,left_y)	
+				
+				if gain > best_gain:
+					best_gain,best_ques = gain,question
 
-	def _growTree(self,X,y,depth=0):
-		'''Building a decision Tree by recurssively finding the best split'''
-		cl,num_samples_per_class = np.unique(y,return_counts=True)
-		#print(cl,num_samples_per_class)
-		# #print(num_samples_per_class)
-		predicted_class = cl[np.argmax(num_samples_per_class)]
-		#print(predicted_class)
-		#print(self._gini(y))
-		node = Node(
-				gini 					= 	self._gini(y),
-				num_samples 			= 	y.size,
-				num_samples_per_class 	= 	num_samples_per_class,
-				predicted_class 		= 	predicted_class
-			) 		
-		# split recurssively until maximum depth is reached
-		if depth < self.max_depth:
-			idx,thr = self.bestSplit(X,y)
-			if idx is not None:
-				indices_left 		= 	X[:,idx] < thr
-				# print("index "+str(indices_left))
-				X_left,y_left 		= 	X[indices_left],y[indices_left] 
-				X_right,y_right 	= 	X[~indices_left],y[~indices_left]
-				node.feature_index 	= 	idx
-				node.threshold 		= 	thr 
-				node.left 			= 	self._growTree(X_left,y_left,depth+1)
-				node.right			= 	self._growTree(X_right,y_right,depth+1)
+		return best_gain,best_ques				
 
-		return node		
+	class Decision_Node:
+		def __init__(self,question,true_branch,false_branch):
+			self.question = question
+			self.true_branch = true_branch
+			self.false_branch = false_branch
+
+	def build_tree(self,X,y):
+		gain,question = self.find_best_split(X,y)
+		if gain == 0:
+			return self.class_counts(y)
+		right_X,right_y,left_X,left_y = self.partition(X,y,question)
+		right_branch	=	self.build_tree(right_X,right_y)
+		left_branch		=	self.build_tree(left_X,left_y)
+		return self.Decision_Node(question,right_branch,left_branch)
+
+	def classify(self,Node,example):
+		if isinstance(Node,dict):
+			return Node
+		else:
+			if(Node.question.match(example)):
+				return self.classify(Node.right_branch,example)
+			else:
+				return self.classify(Node.left_branch,example)
+					
 
 	def predict(self,X):
 		predictions = []
-		node = self.tree
 		for x in X:
-			while node:
-				if(node.left == None and node.right == None):
-					break
-				if x[node.feature_index] < node.threshold and node.left != None:
-					node = node.left
-				else:
-					if node.right != None:
-						node = node.right
-			prediction = node.predicted_class
-			predictions.append(prediction)
-		return predictions
-
+			d = self.classify(self.Node,x)
+			val = list(d.values())
+			key = list(d.keys())
+			predictions.append(key[val.index(max(val))])
+		return np.array(predictions)	
 	def accuracy(self,X,y):
 		predictions = self.predict(X)
-		print(predictions)
-		print(self.th)
-		print(self.giniC)
-		return 100*(np.sum(predictions == y)/len(y))
+		a = np.array(predictions==y)
+		_accuracy = np.mean(a)*100
+		return _accuracy
 
-# class for implementing Node
-class Node:
-	def __init__(self,gini,num_samples,num_samples_per_class,predicted_class):
-		self.gini 					=		gini
-		self.num_samples			=		num_samples
-		self.num_samples_per_class	=		num_samples_per_class
-		self.predicted_class		=		predicted_class
-		self.feature_index			=		0
-		self.threshold 				=		0
-		self.left 					= 		None
-		self.right					= 		None			
-					
 
-		
